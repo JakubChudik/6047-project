@@ -94,8 +94,6 @@ def get_rna_seq_file_url(case_uuid):
     """
     Return url to RNA-Seq data related to a case_uuid
     """
-    case_uuid = a
-    
     driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe")
     url =   ("https://portal.gdc.cancer.gov/repository?filters=%7B%22op%22%3A%22and%22%2C%22content" +
             "%22%3A%5B%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field%22%3A%22cases.case_id" +
@@ -115,12 +113,36 @@ def get_rna_seq_file_url(case_uuid):
                  find_elements_by_tag_name("td")[2].text)
     return file_name
 
+def make_case_plus_url_table(size = 100):
+    """
+    Make table with 3 columns: Project, Case-UUID, RNA-Seq ULR
+    Include all projects with number of casese >= size
+    """
+    projects = get_project_ids()
+    cases_per_project = get_case_count_per_project(projects)
+    all_cases_dic = {}
+    
+    for project in cases_per_project:
+        if cases_per_project[project] >= size:
+            all_cases_dic[project] = get_all_cases_from_project(project)
+
+    ##todo get url for each case
+    
+def make_rna_seq_json(rna_seq_url):
+    """
+    Create a json file that could be used for mass file download as per
+    https://docs.gdc.cancer.gov/API/Users_Guide/Downloading_Files/ section 
+    POST REQUEST WITH FORM DATA PAYLOAD 
+    """
+    raise NotImplementedError
+
 def get_demo_and_clin_data(case_uuid):
     """
     Return demographic and clinical data associated with a case_uuid
     """
     url = "https://portal.gdc.cancer.gov/cases/" + case_uuid
-    return 
+    raise NotImplementedError
+ 
 
 
 
