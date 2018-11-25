@@ -7,6 +7,8 @@ Created on Fri Nov 23 14:10:31 2018
 
 from selenium import webdriver
 import pandas as pd
+import json
+import requests
 
 def get_project_ids(size = 1):
     """
@@ -139,13 +141,22 @@ def make_case_plus_url_table(size = 100):
 
     return res
     
-def make_rna_seq_json(rna_seq_url):
+def download_rna_seqs(rna_seq_urls, filename = "data.tar"):
     """
-    Create a json file that could be used for mass file download as per
+    Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per 
     https://docs.gdc.cancer.gov/API/Users_Guide/Downloading_Files/ section 
     POST REQUEST WITH FORM DATA PAYLOAD 
     """
-    raise NotImplementedError
+    data_dict = {}
+    data_dict["ids"] = rna_seq_urls
+    
+    headers = {'Content-Type': 'application/json'}
+    data = json.dumps(data_dict)
+        
+    response = requests.post('https://api.gdc.cancer.gov/data', headers=headers, data=data)
+    with open(filename, "wb") as file:
+        file.write(response.content)
+    file.close()
 
 def get_demo_and_clin_data(case_uuid):
     """
