@@ -95,10 +95,11 @@ def get_all_cases_from_project(project = "TCGA-LUSC"):
     
     return case_dict
 
-def get_rna_seq_file_url(case_uuid):
+def get_rna_seq_file_uuid(case_uuid):
     """
     Return url to RNA-Seq data related to a case_uuid
     """
+    case_uuid = "e457344d-76fb-46bf-b362-61a6e811d131"
     driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe")
     url =   ("https://portal.gdc.cancer.gov/repository?filters=%7B%22op%22%3A%22and%22%2C%22content" +
             "%22%3A%5B%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field%22%3A%22cases.case_id" +
@@ -108,15 +109,23 @@ def get_rna_seq_file_url(case_uuid):
             "files.experimental_strategy%22%2C%22value%22%3A%5B%22RNA-Seq" + 
             "%22%5D%7D%7D%5D%7D&searchTableTab=files")
     driver.get(url)
+    
     #wait for page to load
     driver.implicitly_wait(3)
+    
+    #click accept on popup window
     driver.switch_to_active_element().find_element_by_css_selector(".undefined.button.css-oe4so").click()
      
     #wait for page to load
     driver.implicitly_wait(3)
-    file_name = (driver.find_elements_by_class_name("css-3a0tuc")[0].
-                 find_elements_by_tag_name("td")[2].text)
-    return file_name
+    
+    #find file UUID in the html
+    file_uuid = (driver.find_elements_by_class_name("css-3a0tuc")[0]
+                 .find_elements_by_tag_name("td")[2]
+                 .find_element_by_tag_name("a").get_attribute("href")
+                 .split("files/")[1])
+    
+    return file_uuid
 
 def make_case_plus_url_table(size = 100):
     """
