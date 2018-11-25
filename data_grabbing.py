@@ -6,12 +6,12 @@ Created on Fri Nov 23 14:10:31 2018
 """
 
 from selenium import webdriver
+import pandas as pd
 
-def get_project_ids():
+def get_project_ids(size = 1):
     """
     Return ids of all projects
     """
-    size = 100
     driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe")
     url = ("https://api.gdc.cancer.gov/projects?from=0&size=" + str(size) + 
            "&sort=project.project_id:asc&pretty=true")
@@ -83,7 +83,10 @@ def get_all_cases_from_project(project = "TCGA-LUSC"):
              "%22%5D%7D%7D%5D%7D&searchTableTab=cases")
         driver.get(url)
         for case_row_id in range(0, cases_size):
-            temp = driver.find_element_by_id("row-" + str(case_row_id) + "-case-link")
+            try:
+                temp = driver.find_element_by_id("row-" + str(case_row_id) + "-case-link")
+            except:
+                break
             case_id = temp.text
             case_url = temp.get_attribute("href").split("?")[0].split("cases/")[1]
             case_dict[case_id] = case_url
@@ -115,7 +118,7 @@ def get_rna_seq_file_url(case_uuid):
 
 def make_case_plus_url_table(size = 100):
     """
-    Make table with 3 columns: Project, Case-UUID, RNA-Seq ULR
+    Make table with 3 columns: Project, Case-UUID, RNA-Seq UUID
     Include all projects with number of casese >= size
     """
     projects = get_project_ids()
@@ -125,8 +128,16 @@ def make_case_plus_url_table(size = 100):
     for project in cases_per_project:
         if cases_per_project[project] >= size:
             all_cases_dic[project] = get_all_cases_from_project(project)
+        
+    res = [["Project", "Case-UUID", "RNA-Seq Url"]]    
+    
+    for project in all_cases_dic:
+        for case in all_cases_dic[project]:
+            uuid = all_cases_dic[project][case]
+            temp = [project, uuid , get_rna_seq_file_url(uuid)]
+            res.append(temp)
 
-    ##todo get url for each case
+    return res
     
 def make_rna_seq_json(rna_seq_url):
     """
