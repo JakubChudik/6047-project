@@ -12,19 +12,18 @@ To-Do:
 3. Get all cases from a single project - DONE
 	get_all_cases_from_project
 
-4. Get URL of RNA-Seq file for a single case - DONE
+4. Get UUID of RNA-Seq file for a single case - DONE
 	get_rna_seq_file_url
 
-5. Build json of RNA-Seq file names for mass download using GDC API 
+5. Mass download RNA-Seq data from RNA-Seq UUIDs using GDC API - DONE
+	download_rna_seqs
+	
+6. Download clinical and demographic data
 
-6. Create bash script to unzipp RNA-Seq files
+7. Merge RNA-Seq, demographic and clinical data into one large pandas df
 
-7. Download clinical and demographic data
+8. Make sparse-PCA
 
-8. Merge RNA-Seq, demographic and clinical data into one large pandas df
+9. Make classifier
 
-9. Make sparse-PCA
-
-10. Make classifier
-
-11. Identify common properties within a cluster
+10. Identify common properties within a cluster
