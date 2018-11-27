@@ -47,6 +47,11 @@ def get_case_count_per_project(projects):
     return dic
 
 def get_cases_response(primary_site, offset):
+    """
+    Get 10 cases from primary_site including experimental strategy, and analysis type for each 
+    case using GDC API, see guide here https://docs.gdc.cancer.gov/API/PDF/API_UG.pdf
+    Returns a python request response
+    """
     files_endpt = 'https://api.gdc.cancer.gov/cases'
     filters = {
             "op":"and",
