@@ -10,11 +10,14 @@ import pandas as pd
 import json
 import requests
 
+options = webdriver.ChromeOptions()
+options.add_argument("headless")
+
 def get_project_ids(size = 1):
     """
     Return ids of all projects
     """
-    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe")
+    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe", chrome_options=options)
     url = ("https://api.gdc.cancer.gov/projects?from=0&size=" + str(size) + 
            "&sort=project.project_id:asc&pretty=true")
     driver.get(url)
@@ -29,7 +32,7 @@ def get_case_count_per_project(projects):
     """
     Return a dicrionary of number of cases with RNA-Seq data for each project from projects
     """
-    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe")
+    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe", chrome_options=options)
     dic = {}
     for project in projects:
         url = ("https://api.gdc.cancer.gov/projects/" + project +
@@ -43,113 +46,75 @@ def get_case_count_per_project(projects):
              dic[project] = 0
     return dic
 
-def get_all_cases_from_project(project = "TCGA-LUSC"):
-    """
-    Return a dictionary of all cases in the project project.
-    Keys are case-ids, values are case-url for each case-id
-    """
-    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe")
-    experiment_strategy = "RNA-Seq"
-    offset = "0"
-    cases_size = 40
-    url =   ("https://portal.gdc.cancer.gov/repository?cases_size=" + str(cases_size) + 
-             "&cases_offset=" + offset + "&facetTab=cases&filters=" +
-             "%7B%22op%22%3A%22and%22%2C%22content%22%3A%5B%7B%22op%22%3A%22in%22%2C%22content" + 
-             "%22%3A%7B%22field%22%3A%22cases.project.project_id%22%2C%22value%22%3A%5B%22" +
-             project + "%22%5D%7D%7D%2C%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field" +
-             "%22%3A%22files.experimental_strategy%22%2C%22value%22%3A%5B%22" + 
-             experiment_strategy + 
-             "%22%5D%7D%7D%5D%7D&searchTableTab=cases")
-    driver.get(url)
-    
-    #wait for page to load
-    driver.implicitly_wait(3)
-    driver.switch_to_active_element().find_element_by_css_selector(".undefined.button.css-oe4so").click()
- 
-    #wait for page to load
-    driver.implicitly_wait(3)
-    
-    #number of cases in this project
-    n_cases = int(driver.find_element_by_class_name("test-showing").text.split("\n")[-2])
-    case_dict = {}
-    
-    for i in range(0, (n_cases // cases_size) +1):
-        offset = i * cases_size
-        url =   ("https://portal.gdc.cancer.gov/repository?cases_size=" + str(cases_size) + 
-             "&cases_offset=" + str(offset) + "&facetTab=cases&filters=" +
-             "%7B%22op%22%3A%22and%22%2C%22content%22%3A%5B%7B%22op%22%3A%22in%22%2C%22content" + 
-             "%22%3A%7B%22field%22%3A%22cases.project.project_id%22%2C%22value%22%3A%5B%22" +
-             project + "%22%5D%7D%7D%2C%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field" +
-             "%22%3A%22files.experimental_strategy%22%2C%22value%22%3A%5B%22" + 
-             experiment_strategy + 
-             "%22%5D%7D%7D%5D%7D&searchTableTab=cases")
-        driver.get(url)
-        for case_row_id in range(0, cases_size):
-            try:
-                temp = driver.find_element_by_id("row-" + str(case_row_id) + "-case-link")
-            except:
-                break
-            case_id = temp.text
-            case_url = temp.get_attribute("href").split("?")[0].split("cases/")[1]
-            case_dict[case_id] = case_url
-    
-    return case_dict
+def get_cases_response(primary_site, offset):
+    files_endpt = 'https://api.gdc.cancer.gov/cases'
+    filters = {
+            "op":"and",
+            "content":[
+                    {
+                    "op":"=",
+                    "content":
+                        {
+                        "field":"cases.primary_site",
+                        "value":[primary_site]
+                        },
+                    },
+                    {
+                    "op":"in",
+                    "content":
+                        {
+                        "field":"files.experimental_strategy",
+                        "value":["RNA-Seq"]
+                        },
+                    }
+                ]
+            }
+    params = {
+                "filters": json.dumps(filters),
+                'fields': 'case_id,files.file_id,files.experimental_strategy,files.access,files.analysis.workflow_type', 
+                'size':"10", 
+                'from':str(offset * 10), 
+                'pretty':"true"
+                }
+    return requests.get(files_endpt, params = params)
 
-def get_rna_seq_file_uuid(case_uuid):
+def get_all_cases_from_response(response, primary_site):
     """
-    Return url to RNA-Seq data related to a case_uuid
+    Return a list of lists of primary_site, case_uuid and rna-seq_file_uuid for all cases in a 
+    requests response response.
     """
-    case_uuid = "e457344d-76fb-46bf-b362-61a6e811d131"
-    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe")
-    url =   ("https://portal.gdc.cancer.gov/repository?filters=%7B%22op%22%3A%22and%22%2C%22content" +
-            "%22%3A%5B%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field%22%3A%22cases.case_id" +
-            "%22%2C%22value%22%3A%5B%22" +
-            case_uuid + 
-            "%22%5D%7D%7D%2C%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field%22%3A%22" +
-            "files.experimental_strategy%22%2C%22value%22%3A%5B%22RNA-Seq" + 
-            "%22%5D%7D%7D%5D%7D&searchTableTab=files")
-    driver.get(url)
-    
-    #wait for page to load
-    driver.implicitly_wait(3)
-    
-    #click accept on popup window
-    driver.switch_to_active_element().find_element_by_css_selector(".undefined.button.css-oe4so").click()
-     
-    #wait for page to load
-    driver.implicitly_wait(3)
-    
-    #find file UUID in the html
-    file_uuid = (driver.find_elements_by_class_name("css-3a0tuc")[0]
-                 .find_elements_by_tag_name("td")[2]
-                 .find_element_by_tag_name("a").get_attribute("href")
-                 .split("files/")[1])
-    
-    return file_uuid
-
-def make_case_plus_url_table(size = 100):
-    """
-    Make table with 3 columns: Project, Case-UUID, RNA-Seq UUID
-    Include all projects with number of casese >= size
-    """
-    projects = get_project_ids()
-    cases_per_project = get_case_count_per_project(projects)
-    all_cases_dic = {}
-    
-    for project in cases_per_project:
-        if cases_per_project[project] >= size:
-            all_cases_dic[project] = get_all_cases_from_project(project)
+    res = []
+    for case in response.json()["data"]["hits"]:
+        case_uuid = case["case_id"]
         
-    res = [["Project", "Case-UUID", "RNA-Seq Url"]]    
-    
-    for project in all_cases_dic:
-        for case in all_cases_dic[project]:
-            uuid = all_cases_dic[project][case]
-            temp = [project, uuid , get_rna_seq_file_url(uuid)]
-            res.append(temp)
-
+        #find RNA-Seq UUID
+        rna_seq_uuid = None
+        for file in case["files"]:
+            if (
+                file.get("access", "") == "open" and 
+                file.get("experimental_strategy", "") == "RNA-Seq" and
+                file.get("analysis", {}).get("workflow_type", "") == "HTSeq - FPKM"
+                ):
+                    rna_seq_uuid = file["file_id"]
+                    
+        res.append([primary_site, case_uuid, rna_seq_uuid])
     return res
-    
+
+def get_all_cases_from_primary_site(primary_site = "Colon"):
+    """
+    Return a list of lists of primary_site, case_uuid and rna-seq_file_uuid for all cases
+    which fall within primary site primary_site. RNA-Seq file is type "HTSeq - FPKM-UQ" see
+    https://docs.gdc.cancer.gov/Encyclopedia/pages/HTSeq-FPKM-UQ/ for details
+    """
+    res = [["primary_site","case_uuid", "rna_seq_uuid"]]
+    offset = -1
+    response = get_cases_response(primary_site, 0)
+    while offset < response.json()["data"]["pagination"]["pages"]:
+        offset += 1
+        response = get_cases_response(primary_site, offset)
+        res += get_all_cases_from_response(response, primary_site)
+    return res
+        
 def download_rna_seqs(rna_seq_urls, filename = "data.tar"):
     """
     Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per 
@@ -172,8 +137,12 @@ def get_demo_and_clin_data(case_uuid):
     Return demographic and clinical data associated with a case_uuid
     """
     url = "https://portal.gdc.cancer.gov/cases/" + case_uuid
-    raise NotImplementedError
- 
+    raise NotImplementedError 
+
+
+
+
+
 
 
 
