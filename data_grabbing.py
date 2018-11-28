@@ -5,8 +5,9 @@ Created on Fri Nov 23 14:10:31 2018
 @author: jakub
 """
 
-import pandas as pd
 import json
+import numpy as np
+import pandas as pd
 import requests
 
 def get_case_counts_for_primary_sites():
@@ -20,14 +21,14 @@ def get_case_counts_for_primary_sites():
             "size":"0",
             "facets":"primary_site",
             }
-    
+
     response = requests.post(cases_endpt, headers=headers, data = json.dumps(data2))
     response_dic = response.json()
     count_dic = {}
-    
+
     for bucket in response_dic["data"]["aggregations"]["primary_site"]["buckets"]:
         count_dic[bucket["key"]] = count_dic.get(bucket["key"], 0) + bucket["doc_count"]
-    
+
     return count_dic
 
 def get_cases_response(primary_site, offset):
@@ -148,3 +149,14 @@ def get_demo_and_clin_data(case_uuid):
     response = requests.get(url, params=params)
     diagnoses = response.json()['data']['diagnoses'][0]
     return (case_uuid, diagnoses)
+
+def data_transform(filename):
+    """
+    takes in a csv file with [primary_site, case_uuid, rna_seq_uuid], downloads the
+    corresponding rna_seq file and combines all the data into a single file
+    that can be used to perform subsequent analysis
+    """
+
+    return NotImplementedError
+
+# make_files_for_cases(100)
