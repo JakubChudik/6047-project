@@ -123,6 +123,9 @@ def download_rna_seqs(rna_seq_uuid_list):
     Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per
     https://docs.gdc.cancer.gov/API/Users_Guide/Downloading_Files/ section
     POST REQUEST WITH FORM DATA PAYLOAD
+    
+    If only a single file - load using pandas.read_csv(filenam, sep="\t")
+    currently working on multiple file download
     """
     data_dict = {}
     data_dict["ids"] = rna_seq_uuid_list
