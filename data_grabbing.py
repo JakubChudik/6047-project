@@ -114,24 +114,24 @@ def make_files_for_cases(size):
         if case_counts[primary_site] >= size:
             temp_file = get_all_cases_from_primary_site(primary_site)
             if len(temp_file) >= size:
-                print("done")
                 df = pd.DataFrame(temp_file)
                 df.to_csv("data/" + primary_site + "_case_rna_uuids.csv", sep = ",")
     return
 
-def download_rna_seqs(rna_seq_urls, filename = "data.tar"):
+def download_rna_seqs(rna_seq_uuid_list):
     """
     Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per
     https://docs.gdc.cancer.gov/API/Users_Guide/Downloading_Files/ section
     POST REQUEST WITH FORM DATA PAYLOAD
     """
     data_dict = {}
-    data_dict["ids"] = rna_seq_urls
+    data_dict["ids"] = rna_seq_uuid_list
 
     headers = {'Content-Type': 'application/json'}
     data = json.dumps(data_dict)
 
     response = requests.post('https://api.gdc.cancer.gov/data', headers=headers, data=data)
+    filename = response.headers["Content-Disposition"].split("filename=")[1]
     with open(filename, "wb") as file:
         file.write(response.content)
     file.close()
