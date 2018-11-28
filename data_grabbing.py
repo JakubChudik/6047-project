@@ -173,7 +173,7 @@ def get_random_cases(size = 20):
         temp_dfs.append(df.iloc[rows])
     
     res = pd.concat(temp_dfs)
-    res.to_csv("random_case_selection.cs")
+    res.to_csv("random_case_selection_size_"+str(size)+".csv")
     return res
 
 def data_transform(filename):
