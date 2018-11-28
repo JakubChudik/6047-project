@@ -191,7 +191,6 @@ def data_transform(filename):
         for i in range(2,len(lines)):
             case = lines[i].split(',')
             case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')]),sep="\t",names = ['rna_id','level'])
-            print(case_rna)
             try:
                 data['case_uuid'].append(case[2])
             except:
@@ -201,8 +200,6 @@ def data_transform(filename):
                     data[row['rna_id']].append(row['level'])
                 except:
                     data[row['rna_id']] = [row['level']]
-            print(data)
-    print(data)
     return
 
 # make_files_for_cases(100)
