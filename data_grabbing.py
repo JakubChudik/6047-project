@@ -29,24 +29,6 @@ def get_case_counts_for_primary_site():
     
     return count_dic
 
-def get_case_count_per_project(projects):
-    """
-    Return a dicrionary of number of cases with RNA-Seq data for each project from projects
-    """
-    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe", chrome_options=options)
-    dic = {}
-    for project in projects:
-        url = ("https://api.gdc.cancer.gov/projects/" + project +
-               "?expand=summary,summary.experimental_strategies,&pretty=true")
-        driver.get(url)
-        a = driver.page_source
-        if "RNA-Seq" in a:
-            a = a.split('"experimental_strategy": "RNA-Seq"')[0].split('"case_count": ')
-            dic[project] = int(a[-1].split(",")[0])
-        else:
-             dic[project] = 0
-    return dic
-
 def get_cases_response(primary_site, offset):
     """
     Get 10 cases from primary_site including experimental strategy, and analysis type for each
@@ -102,8 +84,8 @@ def get_all_cases_from_response(response, primary_site):
                 file.get("analysis", {}).get("workflow_type", "") == "HTSeq - FPKM"
                 ):
                     rna_seq_uuid = file["file_id"]
-
-        res.append([primary_site, case_uuid, rna_seq_uuid])
+        if rna_seq_uuid:
+            res.append([primary_site, case_uuid, rna_seq_uuid])
     return res
 
 def get_all_cases_from_primary_site(primary_site = "Colon"):
