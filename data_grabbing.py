@@ -7,8 +7,12 @@ Created on Fri Nov 23 14:10:31 2018
 
 import json
 import numpy as np
+import os
 import pandas as pd
+import random
 import requests
+
+random.seed(7)
 
 def get_case_counts_for_primary_sites():
     """
@@ -136,6 +140,7 @@ def download_rna_seq(rna_seq_uuid_list):
 
     response = requests.post('https://api.gdc.cancer.gov/data', headers=headers, data=data)
     filename = response.headers["Content-Disposition"].split("filename=")[1]
+    
     with open(filename, "wb") as file:
         file.write(response.content)
     file.close()
@@ -154,6 +159,22 @@ def get_demo_and_clin_data(case_uuid):
     response = requests.get(url, params=params)
     diagnoses = response.json()['data']['diagnoses'][0]
     return (case_uuid, diagnoses)
+
+def get_random_cases(size = 20):
+    """
+    Get size number of random cases from each primary site and save them in
+    random_case_selections.csv
+    """
+    temp_dfs = []
+    for file in os.listdir("data"):
+        df = pd.read_csv("data/" + file, header = 1)
+        df = df.drop(columns = ['0'])
+        rows = random.sample(range(0, len(df) -1), size)
+        temp_dfs.append(df.iloc[rows])
+    
+    res = pd.concat(temp_dfs)
+    res.to_csv("random_case_selection.cs")
+    return res
 
 def data_transform(filename):
     """
