@@ -104,6 +104,21 @@ def get_all_cases_from_primary_site(primary_site = "Colon"):
         res += get_all_cases_from_response(response, primary_site)
     return res
 
+def make_files_for_cases(size):
+    """
+    Create csv file with [primary_site, case_uuid, rna_seq_uuid] for all primary sites that have
+    at least size number of cases with rna_seq files and save them to data/
+    """
+    case_counts = get_case_counts_for_primary_sites()
+    for primary_site in case_counts:
+        if case_counts[primary_site] >= size:
+            temp_file = get_all_cases_from_primary_site(primary_site)
+            if len(temp_file) >= size:
+                print("done")
+                df = pd.DataFrame(temp_file)
+                df.to_csv("data/" + primary_site + "_case_rna_uuids.csv", sep = ",")
+    return
+
 def download_rna_seqs(rna_seq_urls, filename = "data.tar"):
     """
     Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per
