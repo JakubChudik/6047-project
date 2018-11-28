@@ -9,9 +9,10 @@ import pandas as pd
 import json
 import requests
 
-def get_case_counts_for_primary_site():
+def get_case_counts_for_primary_sites():
     """
-    Return the number of cases for each primary site
+    Return the number of cases for each primary site as a dictionary with keys being primary sites
+    and values being number of cases
     """
     cases_endpt = 'https://api.gdc.cancer.gov/cases'
     headers = {'Content-Type': 'application/json'}
