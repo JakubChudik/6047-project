@@ -5,28 +5,29 @@ Created on Fri Nov 23 14:10:31 2018
 @author: jakub
 """
 
-from selenium import webdriver
 import pandas as pd
 import json
 import requests
 
-options = webdriver.ChromeOptions()
-options.add_argument("headless")
-
-def get_project_ids(size = 1):
+def get_case_counts_for_primary_site():
     """
-    Return ids of all projects
+    Return the number of cases for each primary site
     """
-    driver = webdriver.Chrome(executable_path = "utils/chromedriver.exe", chrome_options=options)
-    url = ("https://api.gdc.cancer.gov/projects?from=0&size=" + str(size) +
-           "&sort=project.project_id:asc&pretty=true")
-    driver.get(url)
-    a = driver.page_source.split('"project_id"')
-    ids = []
-    for i in a[1:]:
-        temp = i.split('"')
-        ids.append(temp[1])
-    return ids
+    cases_endpt = 'https://api.gdc.cancer.gov/cases'
+    headers = {'Content-Type': 'application/json'}
+    data2 = {
+            "size":"0",
+            "facets":"primary_site",
+            }
+    
+    response = requests.post(cases_endpt, headers=headers, data = json.dumps(data2))
+    response_dic = response.json()
+    count_dic = {}
+    
+    for bucket in response_dic["data"]["aggregations"]["primary_site"]["buckets"]:
+        count_dic[bucket["key"]] = count_dic.get(bucket["key"], 0) + bucket["doc_count"]
+    
+    return count_dic
 
 def get_case_count_per_project(projects):
     """
