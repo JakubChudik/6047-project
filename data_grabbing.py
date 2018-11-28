@@ -128,7 +128,7 @@ def download_rna_seq(rna_seq_uuid_list):
     Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per
     https://docs.gdc.cancer.gov/API/Users_Guide/Downloading_Files/ section
     POST REQUEST WITH FORM DATA PAYLOAD
-    
+
     If only a single file - load using pandas.read_csv(filenam, sep="\t")
     If downloading multiple files, the structure is more nested and complicated
     """
@@ -138,13 +138,14 @@ def download_rna_seq(rna_seq_uuid_list):
     headers = {'Content-Type': 'application/json'}
     data = json.dumps(data_dict)
 
+    print(data)
     response = requests.post('https://api.gdc.cancer.gov/data', headers=headers, data=data)
     filename = response.headers["Content-Disposition"].split("filename=")[1]
-    
+
     with open(filename, "wb") as file:
         file.write(response.content)
     file.close()
-    
+
     return filename
 
 def get_demo_and_clin_data(case_uuid):
@@ -171,7 +172,7 @@ def get_random_cases(size = 20):
         df = df.drop(columns = ['0'])
         rows = random.sample(range(0, len(df) -1), size)
         temp_dfs.append(df.iloc[rows])
-    
+
     res = pd.concat(temp_dfs)
     res.to_csv("random_case_selection_size_"+str(size)+".csv")
     return res
@@ -183,6 +184,26 @@ def data_transform(filename):
     that can be used to perform subsequent analysis
     """
 
-    return NotImplementedError
+    #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
+    data = {}
+    with open(filename,'r') as file:
+        lines = file.readlines()
+        for i in range(2,len(lines)):
+            case = lines[i].split(',')
+            case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')]),sep="\t",names = ['rna_id','level'])
+            print(case_rna)
+            try:
+                data['case_uuid'].append(case[2])
+            except:
+                data['case_uuid'] = [case[2]]
+            for index, row in case_rna.iterrows():
+                try:
+                    data[row['rna_id']].append(row['level'])
+                except:
+                    data[row['rna_id']] = [row['level']]
+            print(data)
+    print(data)
+    return
 
 # make_files_for_cases(100)
+data_transform('data/Blood_case_rna_uuids.csv')
