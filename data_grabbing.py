@@ -119,14 +119,14 @@ def make_files_for_cases(size):
                 df.to_csv("data/" + primary_site + "_case_rna_uuids.csv", sep = ",")
     return
 
-def download_rna_seqs(rna_seq_uuid_list):
+def download_rna_seq(rna_seq_uuid_list):
     """
     Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per
     https://docs.gdc.cancer.gov/API/Users_Guide/Downloading_Files/ section
     POST REQUEST WITH FORM DATA PAYLOAD
     
     If only a single file - load using pandas.read_csv(filenam, sep="\t")
-    currently working on multiple file download
+    If downloading multiple files, the structure is more nested and complicated
     """
     data_dict = {}
     data_dict["ids"] = rna_seq_uuid_list
@@ -139,6 +139,8 @@ def download_rna_seqs(rna_seq_uuid_list):
     with open(filename, "wb") as file:
         file.write(response.content)
     file.close()
+    
+    return filename
 
 def get_demo_and_clin_data(case_uuid):
     """
