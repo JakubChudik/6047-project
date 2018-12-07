@@ -162,9 +162,13 @@ def get_demo_and_clin_data(case_uuid):
         ('expand', 'diagnoses'),
     )
     response = requests.get(url, params=params)
-    diagnoses = response.json()['data']['diagnoses'][0]
-    data = {'case_uuid':case_uuid,'clinical_data':diagnoses}
+    try:
+        diagnoses = response.json()['data']['diagnoses'][0]
+        data = {'case_uuid':case_uuid,'clinical_data':diagnoses}
+    except:
+        return None
     return data
+
 
 def get_random_cases(size = 20):
     """
@@ -195,7 +199,7 @@ def data_transform(filename):
     with open(filename,'r') as file:
         lines = file.readlines()
         for i in range(2,len(lines)):
-            if i % 1 == 0:
+            if i % 20 == 0:
                 case = lines[i].split(',')
                 try:
                     case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')],dirpath),sep="\t",names = ['rna_id','level'])
@@ -214,14 +218,25 @@ def data_transform(filename):
     return data
 
 def combine_clinical_genetic(genetic):
+    '''
+    adds an additonal key of diagnoses age to our data
+    dictionary which previously only contains a key for the
+    case uuid and each measured gene
+    '''
     cases = genetic['case_uuid']
     for i in range(len(cases)):
         clinical = get_demo_and_clin_data(cases[i])
-        age = clinical['clinical_data']['age_at_diagnosis']
-        try:
-            genetic['diagnoses_age'].append(age)
-        except:
-            genetic['diagnoses_age'] = [age]
+        if clinical == None:
+                try:
+                    genetic['diagnoses_age'].append(0)
+                except:
+                    genetic['diagnoses_age'] = [0]
+        else:
+            age = clinical['clinical_data']['age_at_diagnosis']
+            try:
+                genetic['diagnoses_age'].append(age)
+            except:
+                genetic['diagnoses_age'] = [age]
     return genetic
 
 

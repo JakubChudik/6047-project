@@ -8,6 +8,8 @@ import json
 import numpy as np
 import os
 import pandas as pd
+import sklearn
+from math import sqrt
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 
@@ -27,8 +29,9 @@ def linear_regression(data):
     model = LinearRegression()
     model.fit(X_train, y_train)
     pred_train = model.predict(X_train)
+    print(sqrt(sklearn.metrics.mean_squared_error(y_train,pred_train)))
     pred_test = model.predict(X_test)
-
+    print(sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test)))
 
 def main():
     data = data_preprocessing('cleanData.json')
