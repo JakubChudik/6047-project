@@ -24,7 +24,12 @@ def data_preprocessing(filename):
     cases = cases.fillna(0)
     return cases
 
-def linear_regression(data):
+def supervised_learning(data):
+    """
+    breaks our data into training and test, and uses the
+    diagnoses age as y value. then create a linear regression
+    model and test it against the test data
+    """
     X = data.drop(['case_uuid','diagnoses_age'],axis= 1)
     X_train, X_test, y_train, y_test = train_test_split(X, data.diagnoses_age, test_size=0.25)
     model = LinearRegression()
@@ -36,8 +41,11 @@ def linear_regression(data):
     print('actual',list(y_test))
     print(sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test)))
 
+def unsupervised_learning(data):
+    pass
+
 def main():
     data = data_preprocessing('cleanDataBreast.json')
-    linear_regression(data)
+    supervised_learning(data)
 
 main()
