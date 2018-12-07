@@ -11,6 +11,8 @@ import os
 import pandas as pd
 import random
 import requests
+import shutil
+import tempfile
 
 random.seed(7)
 
@@ -123,7 +125,7 @@ def make_files_for_cases(size):
                 df.to_csv("data/" + primary_site + "_case_rna_uuids.csv", sep = ",")
     return
 
-def download_rna_seq(rna_seq_uuid_list):
+def download_rna_seq(rna_seq_uuid_list, dirpath):
     """
     Download a set of files RNA-Seq files using a post request with RNA-Seq UUIDS in json as per
     https://docs.gdc.cancer.gov/API/Users_Guide/Downloading_Files/ section
@@ -138,15 +140,17 @@ def download_rna_seq(rna_seq_uuid_list):
     headers = {'Content-Type': 'application/json'}
     data = json.dumps(data_dict)
 
-    print(data)
-    response = requests.post('https://api.gdc.cancer.gov/data', headers=headers, data=data)
-    filename = response.headers["Content-Disposition"].split("filename=")[1]
+    try:
+        response = requests.post('https://api.gdc.cancer.gov/data', headers=headers, data=data)
+        filename = response.headers["Content-Disposition"].split("filename=")[1]
 
-    with open(filename, "wb") as file:
-        file.write(response.content)
-    file.close()
+        with open(dirpath/filename, "wb") as file:
+            file.write(response.content)
+        file.close()
 
-    return filename
+        return filename
+    except:
+        return None
 
 def get_demo_and_clin_data(case_uuid):
     """
@@ -159,7 +163,8 @@ def get_demo_and_clin_data(case_uuid):
     )
     response = requests.get(url, params=params)
     diagnoses = response.json()['data']['diagnoses'][0]
-    return (case_uuid, diagnoses)
+    data = {'case_uuid':case_uuid,'clinical_data':diagnoses}
+    return data
 
 def get_random_cases(size = 20):
     """
@@ -185,22 +190,48 @@ def data_transform(filename):
     """
 
     #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
+    dirpath = tempfile.mkdtemp()
     data = {}
     with open(filename,'r') as file:
         lines = file.readlines()
         for i in range(2,len(lines)):
-            case = lines[i].split(',')
-            case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')]),sep="\t",names = ['rna_id','level'])
-            try:
-                data['case_uuid'].append(case[2])
-            except:
-                data['case_uuid'] = [case[2]]
-            for index, row in case_rna.iterrows():
+            if i % 5 == 0:
+                case = lines[i].split(',')
                 try:
-                    data[row['rna_id']].append(row['level'])
+                    case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')],dirpath),sep="\t",names = ['rna_id','level'])
+                    try:
+                        data['case_uuid'].append(case[2])
+                    except:
+                        data['case_uuid'] = [case[2]]
+                    for index, row in case_rna.iterrows():
+                        try:
+                            data[row['rna_id']].append(row['level'])
+                        except:
+                            data[row['rna_id']] = [row['level']]
                 except:
-                    data[row['rna_id']] = [row['level']]
-    return
+                    continue
+    shutil.rmtree(dirpath)
+    return data
+
+def combine_clinical_genetic(genetic):
+    cases = genetic['case_uuid']
+    for i in range(len(cases)):
+        clinical = get_demo_and_clin_data(cases[i])
+        age = clinical['clinical_data']['age_at_diagnosis']
+        try:
+            genetic['diagnoses_age'].append(age)
+        except:
+            genetic['diagnoses_age'] = [age]
+    return genetic
+
+
 
 # make_files_for_cases(100)
-data_transform('data/Blood_case_rna_uuids.csv')
+# print(get_demo_and_clin_data('cee553c8-460d-436b-b55d-8f41624816cc'))
+def main():
+    genetic_data = data_transform('random_case_selection_size_15.csv')
+    final = combine_clinical_genetic(genetic_data)
+    with open('cleanData.json', 'w') as outfile:
+        json.dump(final, outfile)
+
+main()
