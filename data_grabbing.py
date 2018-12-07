@@ -142,12 +142,11 @@ def download_rna_seq(rna_seq_uuid_list, dirpath):
 
     try:
         response = requests.post('https://api.gdc.cancer.gov/data', headers=headers, data=data)
-        filename = response.headers["Content-Disposition"].split("filename=")[1]
+        filename = os.path.join(dirpath,response.headers["Content-Disposition"].split("filename=")[1])
 
-        with open(dirpath/filename, "wb") as file:
+        with open(filename, "wb") as file:
             file.write(response.content)
         file.close()
-
         return filename
     except:
         return None
@@ -223,7 +222,6 @@ def combine_clinical_genetic(genetic):
         except:
             genetic['diagnoses_age'] = [age]
     return genetic
-
 
 
 # make_files_for_cases(100)
