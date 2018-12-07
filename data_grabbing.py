@@ -147,6 +147,7 @@ def download_rna_seq(rna_seq_uuid_list, dirpath):
         with open(filename, "wb") as file:
             file.write(response.content)
         file.close()
+        print(filename)
         return filename
     except:
         return None
@@ -194,7 +195,7 @@ def data_transform(filename):
     with open(filename,'r') as file:
         lines = file.readlines()
         for i in range(2,len(lines)):
-            if i % 5 == 0:
+            if i % 1 == 0:
                 case = lines[i].split(',')
                 try:
                     case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')],dirpath),sep="\t",names = ['rna_id','level'])
@@ -229,6 +230,7 @@ def combine_clinical_genetic(genetic):
 def main():
     genetic_data = data_transform('random_case_selection_size_15.csv')
     final = combine_clinical_genetic(genetic_data)
+    print(final['diagnoses_age'])
     with open('cleanData.json', 'w') as outfile:
         json.dump(final, outfile)
 
