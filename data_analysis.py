@@ -21,6 +21,7 @@ def data_preprocessing(filename):
     with open(filename, 'r') as f:
         data = json.load(f)
     cases = pd.DataFrame(data)
+    cases = cases.fillna(0)
     return cases
 
 def linear_regression(data):
@@ -31,10 +32,12 @@ def linear_regression(data):
     pred_train = model.predict(X_train)
     print(sqrt(sklearn.metrics.mean_squared_error(y_train,pred_train)))
     pred_test = model.predict(X_test)
+    print('pred',list(pred_test))
+    print('actual',list(y_test))
     print(sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test)))
 
 def main():
-    data = data_preprocessing('cleanData.json')
+    data = data_preprocessing('cleanDataBreast.json')
     linear_regression(data)
 
 main()

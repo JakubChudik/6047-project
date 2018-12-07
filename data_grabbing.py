@@ -196,10 +196,15 @@ def data_transform(filename):
     #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
     dirpath = tempfile.mkdtemp()
     data = {}
+    gap = 15
     with open(filename,'r') as file:
         lines = file.readlines()
+        print(len(lines))
+        counter = 0
         for i in range(2,len(lines)):
-            if i % 20 == 0:
+            if i % gap == 0:
+                counter += 1
+                print('%s of %s' %(counter,len(lines)/gap))
                 case = lines[i].split(',')
                 try:
                     case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')],dirpath),sep="\t",names = ['rna_id','level'])
@@ -243,10 +248,10 @@ def combine_clinical_genetic(genetic):
 # make_files_for_cases(100)
 # print(get_demo_and_clin_data('cee553c8-460d-436b-b55d-8f41624816cc'))
 def main():
-    genetic_data = data_transform('random_case_selection_size_15.csv')
+    genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
     final = combine_clinical_genetic(genetic_data)
     print(final['diagnoses_age'])
-    with open('cleanData.json', 'w') as outfile:
+    with open('cleanDataBreast.json', 'w') as outfile:
         json.dump(final, outfile)
 
 main()
