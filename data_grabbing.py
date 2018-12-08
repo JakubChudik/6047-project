@@ -191,7 +191,7 @@ def data_transform(filename):
     corresponding rna_seq file and combines all the data into a single file
     that can be used to perform subsequent analysis
     """
-    gap = 100
+    gap = 50
     #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
     dirpath = tempfile.mkdtemp()
     pd_list = []
@@ -252,11 +252,8 @@ def create_clinical_df(case_ids):
 def main():
     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
     clinical_data = create_clinical_df(list(genetic_data.case_uuid))
-    print(clinical_data.tumor_stage)
-    print(clinical_data)
+
     #merge genetic and clinical data here
     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-    print(final.head())
-
-    # final.to_csv("cleanData"+".csv")
+    final.to_csv("cleanDataStage"+".csv")
 main()
