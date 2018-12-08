@@ -211,50 +211,27 @@ def data_transform(filename):
             continue
 
     final_df = pd.concat(pd_list, axis=1, sort=False)
-
     return final_df
 
-def combine_clinical_genetic(genetic):
+def convertTumorStage(tumor_stage):
+    if tumor_stage.count('v') > 0:
+        return 4
+    else:
+        stage = tumor_stage.count('i')
+        return stage
+
+def create_clinical_df(case_ids):
     '''
     adds an additonal key of diagnoses age to our data
     dictionary which previously only contains a key for the
     case uuid and each measured gene
     '''
+    data = {}
     cases = genetic['case_uuid']
     for i in range(len(cases)):
         clinical = get_demo_and_clin_data(cases[i])
-        if clinical == None:
-                try:
-                    genetic['diagnoses_age'].append(0)
-                except:
-                    genetic['diagnoses_age'] = [0]
-        else:
-            age = clinical['clinical_data']['age_at_diagnosis']
-            try:
-                genetic['diagnoses_age'].append(age)
-            except:
-                genetic['diagnoses_age'] = [age]
-    return genetic
-
-def convertTumorStage(tumor_stage):
-    print('here')
-    if tumor_stage.count('v') > 0:
-        print(4)
-        return 4
-    else:
-        stage = tumor_stage.count('i')
-        print(stage)
-        return stage
-
-def augment_tumor_stage(filename):
-    with open(filename, 'r') as f:
-        data = json.load(f)
-    cases = data['case_uuid']
-    for i in range(len(cases)):
-        print(i,len(cases))
-        clinical_data = get_demo_and_clin_data(cases[i])
         try:
-            stage = convertTumorStage(clinical_data['clinical_data']['tumor_stage'])
+            stage = convertTumorStage(clinical['clinical_data']['tumor_stage'])
             try:
                 data['tumor_stage'].append(stage)
             except:
@@ -264,7 +241,13 @@ def augment_tumor_stage(filename):
                 data['tumor_stage'].append(0)
             except:
                 data['tumor_stage'] = [0]
+
+    data = pd.DataFrame(data)
     return data
+
+
+
+
 
 
 
@@ -274,8 +257,9 @@ def augment_tumor_stage(filename):
 # make_files_for_cases(100)
 
 def main():
-    # genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
-    final = combine_clinical_genetic(genetic_data)
-    # final = augment_tumor_stage('cleanData.json')
-    final.to_csv("cleanData"+".csv")
+    genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
+    clinical_data = create_clinical_df(genetic_data.case_uuid)
+    #merge genetic and clinical data here
+
+    # final.to_csv("cleanData"+".csv")
 main()
