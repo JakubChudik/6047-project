@@ -147,7 +147,6 @@ def download_rna_seq(rna_seq_uuid_list, dirpath):
         with open(filename, "wb") as file:
             file.write(response.content)
         file.close()
-        print(filename)
         return filename
     except:
         return None
@@ -213,7 +212,7 @@ def data_transform(filename):
 
     final_df = pd.concat(pd_list, axis=1, sort=False)
     final_df = final_df.transpose()
-    
+
     return final_df
 
 def convertTumorStage(tumor_stage):
@@ -252,9 +251,9 @@ def create_clinical_df(case_ids):
 def main():
     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
     print(genetic_data.head())
-    clinical_data = create_clinical_df(genetic_data.case_uuid)
-    #merge genetic and clinical data here
-    final =  genetic_data.join(clinical_data.set_index('tumor_stage'), on='tumor_stage')
-    print(final.head())
+#    clinical_data = create_clinical_df(genetic_data.case_uuid)
+#    #merge genetic and clinical data here
+#    final =  genetic_data.join(clinical_data.set_index('tumor_stage'), on='tumor_stage')
+#    print(final.head())
     # final.to_csv("cleanData"+".csv")
 main()
