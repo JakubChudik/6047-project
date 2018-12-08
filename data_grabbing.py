@@ -147,7 +147,6 @@ def download_rna_seq(rna_seq_uuid_list, dirpath):
         with open(filename, "wb") as file:
             file.write(response.content)
         file.close()
-        print(filename)
         return filename
     except:
         return None
@@ -254,5 +253,6 @@ def main():
     #merge genetic and clinical data here
     final =  genetic_data.join(clinical_data.set_index('tumor_stage'), on='tumor_stage')
     print(final.head())
+
     # final.to_csv("cleanData"+".csv")
 main()
