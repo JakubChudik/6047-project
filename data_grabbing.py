@@ -209,9 +209,9 @@ def data_transform(filename):
             pd_list.append(df.transpose())
         except:
             continue
-                
+
     final_df = pd.concat(pd_list, axis=1, sort=False)
-    
+
     return final_df
 
 def combine_clinical_genetic(genetic):
@@ -275,10 +275,7 @@ def augment_tumor_stage(filename):
 
 def main():
     # genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
-    # final = combine_clinical_genetic(genetic_data)
-    final = augment_tumor_stage('cleanData.json')
-    print(final['tumor_stage'])
-    with open('cleanDataLarge.json', 'w') as outfile:
-        json.dump(final, outfile)
-
+    final = combine_clinical_genetic(genetic_data)
+    # final = augment_tumor_stage('cleanData.json')
+    final.to_csv("cleanData"+".csv")
 main()
