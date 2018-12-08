@@ -253,7 +253,7 @@ def create_clinical_df(case_ids):
 
 def add_days_to_death(filename):
     original_data = pd.DataFrame.from_csv(filename)
-    case_ids = data.case_uuid
+    case_ids = original_data.case_uuid
     data = {'case_uuid':[]}
     for i in range(len(case_ids)):
         data['case_uuid'].append(case_ids[i])

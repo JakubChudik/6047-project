@@ -50,7 +50,9 @@ def supervised_learning_individual_feature(data):
     diagnoses age as y value. then create a linear regression
     model and test it against the test data
     """
+    data = data.drop(data[data["tumor_stage"] == 0].index)
     X = data.drop(['case_uuid','tumor_stage'],axis= 1)
+    # X = data.drop(['case_uuid','tumor_stage','days_to_death'],axis= 1)
     cols = len(X.columns)
     print(cols)
     mins = []
