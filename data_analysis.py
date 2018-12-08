@@ -20,8 +20,12 @@ def data_preprocessing(filename):
     '''
     with open(filename, 'r') as f:
         data = json.load(f)
+    print(len(data['case_uuid']))
+    for key in data:
+        print(key,len(data[key]))
     cases = pd.DataFrame(data)
     cases = cases.fillna(0)
+    print('data preprocessing complete')
     return cases
 
 def supervised_learning(data):
@@ -30,8 +34,8 @@ def supervised_learning(data):
     diagnoses age as y value. then create a linear regression
     model and test it against the test data
     """
-    X = data.drop(['case_uuid','diagnoses_age'],axis= 1)
-    X_train, X_test, y_train, y_test = train_test_split(X, data.diagnoses_age, test_size=0.25)
+    X = data.drop(['case_uuid','diagnoses_age','tumor_stage'],axis= 1)
+    X_train, X_test, y_train, y_test = train_test_split(X, data.tumor_stage, test_size=0.25)
     model = LinearRegression()
     model.fit(X_train, y_train)
     pred_train = model.predict(X_train)
