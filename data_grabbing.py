@@ -196,7 +196,7 @@ def data_transform(filename):
     #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
     dirpath = tempfile.mkdtemp()
     data = {}
-    gap = 15
+    gap = 1
     with open(filename,'r') as file:
         lines = file.readlines()
         print(len(lines))
@@ -244,14 +244,49 @@ def combine_clinical_genetic(genetic):
                 genetic['diagnoses_age'] = [age]
     return genetic
 
+def convertTumorStage(tumor_stage):
+    print('here')
+    if tumor_stage.count('v') > 0:
+        print(4)
+        return 4
+    else:
+        stage = tumor_stage.count('i')
+        print(stage)
+        return stage
+
+def augment_tumor_stage(filename):
+    with open(filename, 'r') as f:
+        data = json.load(f)
+    cases = data['case_uuid']
+    for i in range(len(cases)):
+        print(i,len(cases))
+        clinical_data = get_demo_and_clin_data(cases[i])
+        try:
+            stage = convertTumorStage(clinical_data['clinical_data']['tumor_stage'])
+            try:
+                data['tumor_stage'].append(stage)
+            except:
+                data['tumor_stage'] = [stage]
+        except:
+            try:
+                data['tumor_stage'].append(0)
+            except:
+                data['tumor_stage'] = [0]
+    return data
+
+
+
+
+
 
 # make_files_for_cases(100)
-# print(get_demo_and_clin_data('cee553c8-460d-436b-b55d-8f41624816cc'))
+
 def main():
-    genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
-    final = combine_clinical_genetic(genetic_data)
-    print(final['diagnoses_age'])
-    with open('cleanDataBreast.json', 'w') as outfile:
+    # genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
+    # final = combine_clinical_genetic(genetic_data)
+    final = augment_tumor_stage('cleanData.json')
+    print(final['tumor_stage'])
+    with open('cleanDataLarge.json', 'w') as outfile:
         json.dump(final, outfile)
 
 main()
