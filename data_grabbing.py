@@ -191,13 +191,14 @@ def data_transform(filename):
     corresponding rna_seq file and combines all the data into a single file
     that can be used to perform subsequent analysis
     """
-    gap = 100
+    gap = 50
     #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
     dirpath = tempfile.mkdtemp()
     pd_list = []
     file_df = pd.read_csv("data/Breast_case_rna_uuids.csv", header = 1)
     for line in range(len(file_df)):
         if line % gap == 0:
+            print(line,len(file_df))
             rna_uuid = file_df.iloc[line]["rna_seq_uuid"]
             case_uuid = file_df.iloc[line]["case_uuid"]
             try:
@@ -231,8 +232,9 @@ def create_clinical_df(case_ids):
     dictionary which previously only contains a key for the
     case uuid and each measured gene
     '''
-    data = {}
+    data = {'case_uuid':[]}
     for i in range(len(case_ids)):
+        data['case_uuid'].append(case_ids[i])
         clinical = get_demo_and_clin_data(case_ids[i])
         try:
             stage = convertTumorStage(clinical['clinical_data']['tumor_stage'])
@@ -253,9 +255,8 @@ def create_clinical_df(case_ids):
 def main():
     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
     clinical_data = create_clinical_df(list(genetic_data.case_uuid))
-    #merge genetic and clinical data here
-    final =  genetic_data.join(clinical_data.set_index('tumor_stage'), on='tumor_stage')
-    print(final.head())
 
-    # final.to_csv("cleanData"+".csv")
+    #merge genetic and clinical data here
+    final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+    final.to_csv("cleanDataStage"+".csv")
 main()
