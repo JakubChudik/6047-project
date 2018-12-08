@@ -216,6 +216,9 @@ def data_transform(filename):
     return final_df
 
 def convertTumorStage(tumor_stage):
+    """
+    convert tumor stage string to number. For example iiic becomes 3
+    """
     if tumor_stage.count('v') > 0:
         return 4
     else:
