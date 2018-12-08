@@ -168,7 +168,6 @@ def get_demo_and_clin_data(case_uuid):
         return None
     return data
 
-
 def get_random_cases(size = 20):
     """
     Get size number of random cases from each primary site and save them in
@@ -176,14 +175,15 @@ def get_random_cases(size = 20):
     """
     temp_dfs = []
     for file in os.listdir("data"):
-        df = pd.read_csv("data/" + file, header = 1)
-        df = df.drop(columns = ['0'])
+        df = pd.read_csv("data/" + file, header = 1, names = ['0', "primary_site", "case_uuid", "rna_seq_uuid"])
+        df = df.drop(columns=['0'])
         rows = random.sample(range(0, len(df) -1), size)
         temp_dfs.append(df.iloc[rows])
-
+        
     res = pd.concat(temp_dfs)
-    res.to_csv("random_case_selection_size_"+str(size)+".csv")
-    return res
+    filename = "random_case_selection_size_"+str(size)+".csv"
+    res.to_csv(filename)
+    return filename
 
 def data_transform(filename):
     """
@@ -191,11 +191,16 @@ def data_transform(filename):
     corresponding rna_seq file and combines all the data into a single file
     that can be used to perform subsequent analysis
     """
-    gap = 50
-    #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
+    gap = 1
+    random_cases = True
     dirpath = tempfile.mkdtemp()
     pd_list = []
-    file_df = pd.read_csv("data/Breast_case_rna_uuids.csv", header = 1)
+    file_df = None
+    if random_cases:
+        file_df = pd.read_csv(filename, header = 0)
+    else:
+        file_df = pd.read_csv(filename, header = 1)
+
     for line in range(len(file_df)):
         if line % gap == 0:
             print(line,len(file_df))
@@ -226,7 +231,7 @@ def convertTumorStage(tumor_stage):
         stage = tumor_stage.count('i')
         return stage
 
-def create_clinical_df(case_ids):
+def create_clinical_df(case_ids, feature):
     '''
     adds an additonal key of diagnoses age to our data
     dictionary which previously only contains a key for the
@@ -237,26 +242,30 @@ def create_clinical_df(case_ids):
         data['case_uuid'].append(case_ids[i])
         clinical = get_demo_and_clin_data(case_ids[i])
         try:
-            stage = convertTumorStage(clinical['clinical_data']['tumor_stage'])
+            stage = convertTumorStage(clinical['clinical_data'][feature])
             try:
-                data['tumor_stage'].append(stage)
+                data[feature].append(stage)
             except:
-                data['tumor_stage'] = [stage]
+                data[feature] = [stage]
         except:
             try:
-                data['tumor_stage'].append(0)
+                data[feature].append(feature)
             except:
-                data['tumor_stage'] = [0]
+                data[feature] = [None]
 
     data = pd.DataFrame(data)
     return data
 
-
 def main():
-    genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
-    clinical_data = create_clinical_df(list(genetic_data.case_uuid))
+    
+    size = 30
+    filename = get_random_cases(size) 
+    genetic_data = data_transform(filename)
+    
+    clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
 
     #merge genetic and clinical data here
     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-    final.to_csv("cleanDataStage"+".csv")
+    final.to_csv("size_" + str(size) + "_random_cancer_mix_rna_and_stage"+".csv")
+
 main()
