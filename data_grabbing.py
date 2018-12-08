@@ -195,32 +195,24 @@ def data_transform(filename):
 
     #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
     dirpath = tempfile.mkdtemp()
-    data = {}
-    gap = 1
-    with open(filename,'r') as file:
-        lines = file.readlines()
-        print(len(lines))
-        counter = 0
-        for i in range(2,len(lines)):
-            if i % gap == 0:
-                counter += 1
-                print('%s of %s' %(counter,len(lines)/gap))
-                case = lines[i].split(',')
-                try:
-                    case_rna = pd.read_csv(download_rna_seq([case[3].rstrip('\n')],dirpath),sep="\t",names = ['rna_id','level'])
-                    try:
-                        data['case_uuid'].append(case[2])
-                    except:
-                        data['case_uuid'] = [case[2]]
-                    for index, row in case_rna.iterrows():
-                        try:
-                            data[row['rna_id']].append(row['level'])
-                        except:
-                            data[row['rna_id']] = [row['level']]
-                except:
-                    continue
-    shutil.rmtree(dirpath)
-    return data
+    pd_list = []
+    file_df = pd.read_csv("data/Breast_case_rna_uuids.csv", header = 1)
+    for line in range(len(file_df)):
+        rna_uuid = file_df.iloc[line]["rna_seq_uuid"]
+        case_uuid = file_df.iloc[line]["case_uuid"]
+        try:
+            df = pd.read_csv(download_rna_seq([rna_uuid], dirpath),sep="\t",names = ['rna_id','value'])
+            df = df.transpose()
+            df.columns = df.iloc[0]
+            df = df.drop(df.index[0])
+            df["case_uuid"] = str(case_uuid)
+            pd_list.append(df.transpose())
+        except:
+            continue
+                
+    final_df = pd.concat(pd_list, axis=1, sort=False)
+    
+    return final_df
 
 def combine_clinical_genetic(genetic):
     '''
