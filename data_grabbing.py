@@ -212,6 +212,8 @@ def data_transform(filename):
                 continue
 
     final_df = pd.concat(pd_list, axis=1, sort=False)
+    final_df = final_df.transpose()
+    
     return final_df
 
 def convertTumorStage(tumor_stage):
@@ -246,16 +248,6 @@ def create_clinical_df(case_ids):
     data = pd.DataFrame(data)
     return data
 
-
-
-
-
-
-
-
-
-
-# make_files_for_cases(100)
 
 def main():
     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
