@@ -10,6 +10,7 @@ import os
 import pandas as pd
 import sklearn
 from math import sqrt
+import random
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
@@ -42,6 +43,47 @@ def supervised_learning(data):
     print('pred',list(pred_test))
     print('actual',list(y_test))
     print(sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test)))
+
+def supervised_learning_individual_feature(data):
+    """
+    breaks our data into training and test, and uses the
+    diagnoses age as y value. then create a linear regression
+    model and test it against the test data
+    """
+    X = data.drop(['case_uuid','tumor_stage'],axis= 1)
+    cols = len(X.columns)
+    print(cols)
+    mins = []
+    indeces = []
+    for i in range(1,cols):
+        column = i
+        X_single = X.iloc[:,column].values.reshape(-1,1)
+        # print(X_single.head())
+        X_train, X_test, y_train, y_test = train_test_split(X_single, data.tumor_stage, test_size=0.25)
+        model = LinearRegression()
+        model.fit(X_train, y_train)
+        pred_train = model.predict(X_train)
+        # print(sqrt(sklearn.metrics.mean_squared_error(y_train,pred_train)))
+        pred_test = model.predict(X_test)
+        # pred_test = np.rint(pred_test)
+        # print('pred',list(pred_test))
+        # print('actual',list(y_test))
+        result = sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test))
+        print(result)
+        if len(mins) >= 5:
+            if result < max(mins):
+                index = mins.index(max(mins))
+                del mins[index]
+                del indeces[index]
+                mins.append(result)
+                indeces.append(column)
+        else:
+            mins.append(result)
+            indeces.append(column)
+    print (mins,indeces)
+    return (mins,indeces)
+
+
 
 def unsupervised_learning(data, feature):
     """
@@ -82,6 +124,6 @@ def unsupervised_learning(data, feature):
 
 def main():
     data = data_preprocessing('cleanDataStage.csv')
-    supervised_learning(data)
+    supervised_learning_individual_feature(data)
 
 main()

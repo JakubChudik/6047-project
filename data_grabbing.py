@@ -248,12 +248,37 @@ def create_clinical_df(case_ids):
     data = pd.DataFrame(data)
     return data
 
+def add_days_to_death(filename):
+    original_data = pd.DataFrame.from_csv(filename)
+    case_ids = data.case_uuid
+    data = {'case_uuid':[]}
+    for i in range(len(case_ids)):
+        data['case_uuid'].append(case_ids[i])
+        clinical = get_demo_and_clin_data(case_ids[i])
+        try:
+            death = clinical['clinical_data']['days_to_death']
+            try:
+                data['days_to_death'].append(stage)
+            except:
+                data['days_to_death'] = [stage]
+        except:
+            try:
+                data['days_to_death'].append(0)
+            except:
+                data['days_to_death'] = [0]
 
-def main():
-    genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
-    clinical_data = create_clinical_df(list(genetic_data.case_uuid))
+    data = pd.DataFrame(data)
+    final = pd.merge(original_data, data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+    final.to_csv("cleanDataStageDeathBreastCancer"+".csv")
+    return final
 
-    #merge genetic and clinical data here
-    final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-    final.to_csv("cleanDataStage"+".csv")
-main()
+add_days_to_death('cleanDataStage.csv')
+
+# def main():
+#     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
+#     clinical_data = create_clinical_df(list(genetic_data.case_uuid))
+#
+#     #merge genetic and clinical data here
+#     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+#     final.to_csv("cleanDataStageSmall"+".csv")
+# main()
