@@ -192,23 +192,24 @@ def data_transform(filename):
     corresponding rna_seq file and combines all the data into a single file
     that can be used to perform subsequent analysis
     """
-
+    gap = 100
     #{case_ids: [case_uuid1,case_uuid2,...], rna_id1:[case1_val,case2_val,...], rna_id2:[...],....}
     dirpath = tempfile.mkdtemp()
     pd_list = []
     file_df = pd.read_csv("data/Breast_case_rna_uuids.csv", header = 1)
     for line in range(len(file_df)):
-        rna_uuid = file_df.iloc[line]["rna_seq_uuid"]
-        case_uuid = file_df.iloc[line]["case_uuid"]
-        try:
-            df = pd.read_csv(download_rna_seq([rna_uuid], dirpath),sep="\t",names = ['rna_id','value'])
-            df = df.transpose()
-            df.columns = df.iloc[0]
-            df = df.drop(df.index[0])
-            df["case_uuid"] = str(case_uuid)
-            pd_list.append(df.transpose())
-        except:
-            continue
+        if line % gap == 0:
+            rna_uuid = file_df.iloc[line]["rna_seq_uuid"]
+            case_uuid = file_df.iloc[line]["case_uuid"]
+            try:
+                df = pd.read_csv(download_rna_seq([rna_uuid], dirpath),sep="\t",names = ['rna_id','value'])
+                df = df.transpose()
+                df.columns = df.iloc[0]
+                df = df.drop(df.index[0])
+                df["case_uuid"] = str(case_uuid)
+                pd_list.append(df.transpose())
+            except:
+                continue
 
     final_df = pd.concat(pd_list, axis=1, sort=False)
     return final_df
@@ -258,8 +259,10 @@ def create_clinical_df(case_ids):
 
 def main():
     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
+    print(genetic_data.head())
     clinical_data = create_clinical_df(genetic_data.case_uuid)
     #merge genetic and clinical data here
-
+    final =  genetic_data.join(clinical_data.set_index('tumor_stage'), on='tumor_stage')
+    print(final.head())
     # final.to_csv("cleanData"+".csv")
 main()
