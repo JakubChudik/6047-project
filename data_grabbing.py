@@ -332,6 +332,8 @@ def make_full_rna_files_from_existing(filename):
     final.to_csv('new_stages/' + site + "_full_rna_stage_data_new"+".csv")
     print(site + " done")
 
+make_full_rna_files_from_existing('Breast_full_rna_stage_data.csv')
+
 #def main():
 #    site = "Colon"
 #    genetic_data = data_transform('data/' + site + '_case_rna_uuids.csv')
