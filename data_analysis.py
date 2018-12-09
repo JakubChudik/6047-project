@@ -100,6 +100,24 @@ def get_top_10_stage_for_all():
     temp.to_csv("top_10_log_reg_stage.csv")
     return res, log
 
+def get_top_10_stage_for_file(filename, site):
+    res =  dict()
+    features = ["tumor_stage"]
+    split = "tumor_stage"
+    data = data_preprocessing(filename)
+    mins = []
+    try:
+        mins = supervised_learning_individual_feature(data, features, split, linear = False)
+        res[site] = mins[0:10]
+        print("success")
+    except:
+        print("failure")
+
+    temp = pd.DataFrame(res)
+    temp.to_csv(site + "_top_10_log_reg_stage_old.csv")
+    return res
+
+
 def get_top_10_death_for_all():
     res =  dict()
     log = dict()

@@ -322,17 +322,17 @@ def make_full_rna_files():
         print(site + " done")
 
 def make_full_rna_files_from_existing(filename):
+    site = "Breast"
     original_data = pd.DataFrame.from_csv(filename)
-    genetic_data = original_data.drop(['tumor_stage'])
+    genetic_data = original_data.drop(columns=['tumor_stage'])
     clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
 
     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
     final = final[final['tumor_stage'].notnull()]
 #            final = final[final["tumor_stage"] != "tumor_stage"]
     final.to_csv('new_stages/' + site + "_full_rna_stage_data_new"+".csv")
-    print(site + " done")
 
-make_full_rna_files_from_existing('Breast_full_rna_stage_data.csv')
+make_full_rna_files_from_existing('rna_data/Breast_full_rna_stage_data.csv')
 
 #def main():
 #    site = "Colon"
