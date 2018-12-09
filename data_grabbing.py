@@ -224,13 +224,12 @@ def convertTumorStage(tumor_stage):
         return None
     elif tumor_stage == "0":
         return 0
-    elif tumor_stage.count('i') > 0:
-        return tumor_stage.count('i')
     elif tumor_stage.count('v') > 0:
         return 4
-    else:        
-        print("tumor stage: " + tumor_stage)
-        raise Exception
+    elif tumor_stage.count('i') > 0:
+        return tumor_stage.count('i')
+    else:  
+        return None
 
 def create_clinical_df(case_ids, feature):
     '''
@@ -296,7 +295,7 @@ def normalize_df(df):
     return df
     
 def main():
-    site = "Breast"
+    site = "Colon"
     genetic_data = data_transform('data/' + site + '_case_rna_uuids.csv')
 #    genetic_data = normalize_df(genetic_data)
 #    genetic_data.fillna(genetic_data.mean(), inplace=True)
@@ -305,5 +304,7 @@ def main():
 
     #merge genetic and clinical data here
     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+    final = final[final['tumor_stage'].notnull()]
+    final = final[final["tumor_stage"] != "tumor_stage"]
     final.to_csv(site + "_full_rna_stage_data"+".csv")
 main()

@@ -73,21 +73,14 @@ def supervised_learning_individual_feature(data):
         result = sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test))
         if i % 1000 == 0:
             print("Currently on gene: " + str(i))
-        if len(mins) >= 5:
-            if result < max(mins):
-                index = mins.index(max(mins))
-                del mins[index]
-                del indeces[index]
-                mins.append(result)
-                indeces.append(column)
-        else:
-            mins.append(result)
-            indeces.append(column)
-    print (mins,indeces)
-    return (mins,indeces)
+        mins.append((result, i))
+    mins.sort(key = lambda x: x[0])
+    print(mins[0:5])
+    return mins
 
 def main():
-    data = data_preprocessing('Breast_test_data.csv')
+    site = "Colon"
+    data = data_preprocessing(site +"_full_rna_stage_data.csv")
     supervised_learning_individual_feature(data)
 
 main()
