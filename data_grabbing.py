@@ -321,20 +321,16 @@ def make_full_rna_files():
             final.to_csv(site + "_full_rna_stage_data"+".csv")
         print(site + " done")
 
-def make_full_rna_files_from_existing():
-    for file in os.listdir("data"):
-        site = file.split("_")[0]
-        f = 'data/' + site + '_case_rna_uuids.csv'
-        if site == "Breast" or site == "Colon":
-            original_data = pd.DataFrame.from_csv(f)
-            genetic_data = original_data.drop(['tumor_stage'])
-            clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
+def make_full_rna_files_from_existing(filename):
+    original_data = pd.DataFrame.from_csv(filename)
+    genetic_data = original_data.drop(['tumor_stage'])
+    clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
 
-            final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-            final = final[final['tumor_stage'].notnull()]
+    final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+    final = final[final['tumor_stage'].notnull()]
 #            final = final[final["tumor_stage"] != "tumor_stage"]
-            final.to_csv('new_stages/' + site + "_full_rna_stage_data_new"+".csv")
-        print(site + " done")
+    final.to_csv('new_stages/' + site + "_full_rna_stage_data_new"+".csv")
+    print(site + " done")
 
 #def main():
 #    site = "Colon"
