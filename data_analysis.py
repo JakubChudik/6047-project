@@ -50,8 +50,8 @@ def supervised_learning_individual_feature(data):
     diagnoses age as y value. then create a linear regression
     model and test it against the test data
     """
-    data = data.drop(data[data["tumor_stage"] == 0].index)
-    X = data.drop(['case_uuid','tumor_stage'],axis= 1)
+    data = data.drop(data[data["days_to_death"] == 0].index)
+    X = data.drop(['case_uuid','tumor_stage','days_to_death'],axis= 1)
     # X = data.drop(['case_uuid','tumor_stage','days_to_death'],axis= 1)
     cols = len(X.columns)
     print(cols)
@@ -61,7 +61,7 @@ def supervised_learning_individual_feature(data):
         column = i
         X_single = X.iloc[:,column].values.reshape(-1,1)
         # print(X_single.head())
-        X_train, X_test, y_train, y_test = train_test_split(X_single, data.tumor_stage, test_size=0.25)
+        X_train, X_test, y_train, y_test = train_test_split(X_single, data.days_to_death, test_size=0.25)
         model = LinearRegression()
         model.fit(X_train, y_train)
         pred_train = model.predict(X_train)
@@ -125,7 +125,7 @@ def unsupervised_learning(data, feature):
     ax.grid()
 
 def main():
-    data = data_preprocessing('cleanDataStage.csv')
+    data = data_preprocessing('cleanDataStageDeathBreastCancer.csv')
     supervised_learning_individual_feature(data)
 
 main()
