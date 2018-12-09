@@ -50,37 +50,25 @@ def supervised_learning_individual_feature(data):
     diagnoses age as y value. then create a linear regression
     model and test it against the test data
     """
-    data = data[pd.notnull(data['tumor_stage'])]
     X = data.drop(['case_uuid','tumor_stage'],axis= 1)
-    # X = data.drop(['case_uuid','tumor_stage','days_to_death'],axis= 1)
-    cols = len(X.columns)
-    print(cols)
     mins = []
-    indeces = []
-    for i in range(1,cols):
-        column = i
-        X_single = X.iloc[:,column].values.reshape(-1,1)
-        # print(X_single.head())
+    for i in range(len(X.columns)):
+        X_single = X.iloc[:,i].values.reshape(-1,1)
         X_train, X_test, y_train, y_test = train_test_split(X_single, data.tumor_stage, test_size=0.25)
         model = LinearRegression()
         model.fit(X_train, y_train)
-        pred_train = model.predict(X_train)
-        # print(sqrt(sklearn.metrics.mean_squared_error(y_train,pred_train)))
         pred_test = model.predict(X_test)
-        # pred_test = np.rint(pred_test)
-        # print('pred',list(pred_test))
-        # print('actual',list(y_test))
         result = sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test))
         if i % 1000 == 0:
             print("Currently on gene: " + str(i))
-        mins.append((result, i))
+        mins.append((result, X.columns[i]))
     mins.sort(key = lambda x: x[0])
     print(mins[0:5])
     return mins
 
-def main():
-    site = "Colon"
-    data = data_preprocessing(site +"_full_rna_stage_data.csv")
-    supervised_learning_individual_feature(data)
+#def main():
 
-main()
+site = "Breast"
+data = data_preprocessing(site +"_full_rna_stage_data.csv")
+mins = supervised_learning_individual_feature(data)
+#main()
