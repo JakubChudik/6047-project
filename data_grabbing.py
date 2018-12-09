@@ -89,7 +89,7 @@ def get_all_cases_from_response(response, primary_site):
             if (
                 file.get("access", "") == "open" and
                 file.get("experimental_strategy", "") == "RNA-Seq" and
-                file.get("analysis", {}).get("workflow_type", "") == "HTSeq - FPKM"
+                file.get("analysis", {}).get("workflow_type", "") == "HTSeq - Counts"
                 ):
                     rna_seq_uuid = file["file_id"]
         if rna_seq_uuid:
@@ -99,10 +99,10 @@ def get_all_cases_from_response(response, primary_site):
 def get_all_cases_from_primary_site(primary_site = "Colon"):
     """
     Return a list of lists of primary_site, case_uuid and rna-seq_file_uuid for all cases
-    which fall within primary site primary_site. RNA-Seq file is type "HTSeq - FPKM-UQ" see
+    which fall within primary site primary_site. RNA-Seq file is type "HTSeq - Counts" see
     https://docs.gdc.cancer.gov/Encyclopedia/pages/HTSeq-FPKM-UQ/ for details
     """
-    res = [["primary_site","case_uuid", "rna_seq_uuid"]]
+    res = []
     offset = -1
     response = get_cases_response(primary_site, 0)
     while offset < response.json()["data"]["pagination"]["pages"]:
@@ -118,10 +118,11 @@ def make_files_for_cases(size):
     """
     case_counts = get_case_counts_for_primary_sites()
     for primary_site in case_counts:
+        print("one done")
         if case_counts[primary_site] >= size:
             temp_file = get_all_cases_from_primary_site(primary_site)
             if len(temp_file) >= size:
-                df = pd.DataFrame(temp_file)
+                df = pd.DataFrame(temp_file, columns = ["primary_site","case_uuid", "rna_seq_uuid"])
                 df.to_csv("data/" + primary_site + "_case_rna_uuids.csv", sep = ",")
     return
 
@@ -158,7 +159,7 @@ def get_demo_and_clin_data(case_uuid):
     url = "https://api.gdc.cancer.gov/cases/" + case_uuid
     params = (
         ('pretty', 'true'),
-        ('expand', 'diagnoses'),
+        ('expand', 'diagnoses,demographic'),
     )
     response = requests.get(url, params=params)
     try:
@@ -192,15 +193,9 @@ def data_transform(filename):
     that can be used to perform subsequent analysis
     """
     gap = 1
-    random_cases = True
     dirpath = tempfile.mkdtemp()
     pd_list = []
-    file_df = None
-    if random_cases:
-        file_df = pd.read_csv(filename, header = 0)
-    else:
-        file_df = pd.read_csv(filename, header = 1)
-
+    file_df = pd.read_csv(filename, header = 0)
     for line in range(len(file_df)):
         if line % gap == 0:
             print(line,len(file_df))
@@ -225,11 +220,16 @@ def convertTumorStage(tumor_stage):
     """
     convert tumor stage string to number. For example iiic becomes 3
     """
-    if tumor_stage.count('v') > 0:
+    if tumor_stage == "not reported":
+        return None
+    elif tumor_stage == "0":
+        return 0
+    elif tumor_stage.count('v') > 0:
         return 4
-    else:
-        stage = tumor_stage.count('i')
-        return stage
+    elif tumor_stage.count('i') > 0:
+        return tumor_stage.count('i')
+    else:  
+        return None
 
 def create_clinical_df(case_ids, feature):
     '''
@@ -258,8 +258,8 @@ def create_clinical_df(case_ids, feature):
 
 
 def add_days_to_death(filename):
-    original_data = pd.DataFrame.from_csv(filename)
-    case_ids = original_data.case_uuid
+    original_data = pd.DataFrame.from_csv("rna_data/" + filename)
+    case_ids = list(original_data.case_uuid)
     data = {'case_uuid':[]}
     for i in range(len(case_ids)):
         data['case_uuid'].append(case_ids[i])
@@ -267,27 +267,72 @@ def add_days_to_death(filename):
         try:
             death = clinical['clinical_data']['days_to_death']
             try:
-                data['days_to_death'].append(stage)
+                data['days_to_death'].append(death)
             except:
-                data['days_to_death'] = [stage]
+                data['days_to_death'] = [death]
         except:
             try:
-                data['days_to_death'].append(0)
+                data['days_to_death'].append(None)
             except:
-                data['days_to_death'] = [0]
-
+                data['days_to_death'] = [None]
+    
+    file_name = "data_death/" + filename.split(".csv")[0] + "_add_death" + ".csv"
+    
     data = pd.DataFrame(data)
-    final = pd.merge(original_data, data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-    final.to_csv("cleanDataStageDeathBreastCancer"+".csv")
-    return final
+    if not data.empty:
+        final = pd.merge(original_data, data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+        final = final[final['days_to_death'].notnull()]
+        final.to_csv(file_name)
+        return final
 
-add_days_to_death('cleanDataStage.csv')
-
-# def main():
-#     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
-#     clinical_data = create_clinical_df(list(genetic_data.case_uuid))
+#add_days_to_death('cleanDataStage.csv')
 #
-#     #merge genetic and clinical data here
-#     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-#     final.to_csv("cleanDataStageSmall"+".csv")
-# main()
+    
+def normalize_df(df):
+    count = 1 
+    for col in df.columns:
+        if count % 1000 == 0:
+            print("normalized: " + str(count))
+        if col != "case_uuid":
+            df[col] = (df[col] - df[col].mean()) / df[col].std()
+        count += 1
+    return df
+
+def make_full_rna_files():
+    for file in os.listdir("data"):
+        site = file.split("_")[0]
+        f = 'data/' + site + '_case_rna_uuids.csv'
+        if site == "Breast" or site == "Colon":
+            genetic_data = data_transform(f)
+
+            clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
+
+            final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+            final = final[final['tumor_stage'].notnull()]
+#            final = final[final["tumor_stage"] != "tumor_stage"]
+            final.to_csv(site + "_full_rna_stage_data"+".csv")
+        print(site + " done")
+   
+#def main():
+#    site = "Colon"
+#    genetic_data = data_transform('data/' + site + '_case_rna_uuids.csv')
+##    genetic_data = normalize_df(genetic_data)
+##    genetic_data.fillna(genetic_data.mean(), inplace=True)
+#
+#    clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
+#
+#    #merge genetic and clinical data here
+#    final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+#    final = final[final['tumor_stage'].notnull()]
+#    final = final[final["tumor_stage"] != "tumor_stage"]
+#    final.to_csv(site + "_full_rna_stage_data"+".csv")
+#    
+#   
+#    make_full_rna_files()
+#res = 0
+#for file in os.listdir("rna_data"):
+#    print("doing: " + file)
+#    if "Adrenal" not in file and "Bladder" not in file:
+#        res = add_days_to_death(file)
+#    
+#main()

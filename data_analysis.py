@@ -11,7 +11,7 @@ import pandas as pd
 import sklearn
 from math import sqrt
 import random
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -26,106 +26,108 @@ def data_preprocessing(filename):
     print(data.head())
     return data
 
-def supervised_learning(data):
-    """
-    breaks our data into training and test, and uses the
-    diagnoses age as y value. then create a linear regression
-    model and test it against the test data
-    """
-    X = data.drop(['case_uuid','tumor_stage'],axis= 1)
-    X_train, X_test, y_train, y_test = train_test_split(X, data.tumor_stage, test_size=0.25)
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-    pred_train = model.predict(X_train)
-    print(sqrt(sklearn.metrics.mean_squared_error(y_train,pred_train)))
-    pred_test = model.predict(X_test)
-    pred_test = np.rint(pred_test)
-    print('pred',list(pred_test))
-    print('actual',list(y_test))
-    print(sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test)))
+#def supervised_learning(data):
+#    """
+#    breaks our data into training and test, and uses the
+#    diagnoses age as y value. then create a linear regression
+#    model and test it against the test data
+#    """
+#    X = data.drop(['case_uuid','tumor_stage'],axis= 1)
+#    X_train, X_test, y_train, y_test = train_test_split(X, data.tumor_stage, test_size=0.25)
+#    model = LinearRegression()
+#    model.fit(X_train, y_train)
+#    pred_train = model.predict(X_train)
+#    print(sqrt(sklearn.metrics.mean_squared_error(y_train,pred_train)))
+#    pred_test = model.predict(X_test)
+#    pred_test = np.rint(pred_test)
+#    print('pred',list(pred_test))
+#    print('actual',list(y_test))
+#    print(sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test)))
 
-def supervised_learning_individual_feature(data):
+def supervised_learning_individual_feature(data, features, split, linear = True):
     """
     breaks our data into training and test, and uses the
     diagnoses age as y value. then create a linear regression
     model and test it against the test data
     """
-    data = data.drop(data[data["days_to_death"] == 0].index)
-    X = data.drop(['case_uuid','tumor_stage','days_to_death'],axis= 1)
-    # X = data.drop(['case_uuid','tumor_stage','days_to_death'],axis= 1)
-    cols = len(X.columns)
-    print(cols)
+
+    features += ['case_uuid']
+    X = data.drop(features, axis= 1)
     mins = []
-    indeces = []
-    for i in range(1,cols):
-        column = i
-        X_single = X.iloc[:,column].values.reshape(-1,1)
-        # print(X_single.head())
-        X_train, X_test, y_train, y_test = train_test_split(X_single, data.days_to_death, test_size=0.25)
-        model = LinearRegression()
-        model.fit(X_train, y_train)
-        pred_train = model.predict(X_train)
-        # print(sqrt(sklearn.metrics.mean_squared_error(y_train,pred_train)))
-        pred_test = model.predict(X_test)
-        # pred_test = np.rint(pred_test)
-        # print('pred',list(pred_test))
-        # print('actual',list(y_test))
-        result = sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test))
-        print(result)
-        if len(mins) >= 5:
-            if result < max(mins):
-                index = mins.index(max(mins))
-                del mins[index]
-                del indeces[index]
-                mins.append(result)
-                indeces.append(column)
+    for i in range(len(X.columns)):
+        X_single = X.iloc[:,i].values.reshape(-1,1)
+        X_train, X_test, y_train, y_test = 0,0,0,0
+        if split == "tumor_stage":
+            X_train, X_test, y_train, y_test = train_test_split(X_single, data.tumor_stage, test_size=0.25)
         else:
-            mins.append(result)
-            indeces.append(column)
-    print (mins,indeces)
-    return (mins,indeces)
+            X_train, X_test, y_train, y_test = train_test_split(X_single, data.days_to_death, test_size=0.25)
 
+        model = LinearRegression()
+        if not linear:
+            model = LogisticRegression()
 
+        model.fit(X_train, y_train)
+        pred_test = model.predict(X_test)
+        result = sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test))
 
-def unsupervised_learning(data, feature):
-    """
-    performs PCA on data and then clusters them
-    """
-    df = data.drop(['case_uuid', feature],axis= 1)
-    n_components = 2
+        if i % 1000 == 0:
+            print("Currently on gene: " + str(i))
+        mins.append((result, X.columns[i]))
 
+    mins.sort(key = lambda x: x[0])
+    print(mins[0:5])
+    return mins
 
-    pca = PCA(n_components)
-    principal_components = pca.fit_transform(df)
-    principal_df = pd.DataFrame(data = principal_components
-                 , columns = ['principal component 1', 'principal component 2'])
+def get_top_10_stage_for_all():
+    res =  dict()
+    log = dict()
+    features = ["tumor_stage"]
+    split = "tumor_stage"
+    for file in os.listdir("rna_data"):
+        site = file.split("_")[0]
+        f = 'rna_data/' + file
+        data = data_preprocessing(f)
+        mins = []
+        try:
+            mins = supervised_learning_individual_feature(data, features, split, linear = False)
+            res[site] = mins[0:10]
+            log[site] = "success"
+        except:
+            log[site] = "fail"
+            continue
+        print(site + " done")
+    temp = pd.DataFrame(res)
+    temp.to_csv("top_10_log_reg_stage.csv")
+    return res, log
 
-    #cluster and joint PCA with labels
-    clusters = KMeans(n_clusters=2).fit(principal_df)
-    labels = pd.DataFrame({'target':clusters.labels_})
-    finalDf = pd.concat([principal_df, labels[['target']]], axis = 1)
+def get_top_10_death_for_all():
+    res =  dict()
+    log = dict()
+    features = ["tumor_stage", "days_to_death"]
+    split = "days_to_death"
+    for file in os.listdir("data_death"):
+        site = file.split("_")[0]
+        f = 'data_death/' + file
+        data = data_preprocessing(f)
+        mins = []
+        try:
+            mins = supervised_learning_individual_feature(data, features, split)
+            res[site] = mins[0:10]
+            log[site] = "success"
+        except:
+            log[site] = "fail"
+            continue
+        print(site + " done")
+    temp = pd.DataFrame(res)
+    temp.to_csv("top_10_logreg_death.csv")
+    return res, log
 
-    #plot
-    fig = plt.figure(figsize = (8,8))
-    ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel('Principal Component 1', fontsize = 40)
-    ax.set_ylabel('Principal Component 2', fontsize = 40)
-    ax.set_title('2 component PCA', fontsize = 40)
-
-    targets = [0, 1]
-    colors = ['r', 'g']
-
-    for target, color in zip(targets,colors):
-        indicesToKeep = finalDf['target'] == target
-        ax.scatter(finalDf.loc[indicesToKeep, 'principal component 1']
-                   , finalDf.loc[indicesToKeep, 'principal component 2']
-                   , c = color
-                   , s = 50)
-    ax.legend(targets)
-    ax.grid()
-
+<<<<<<< HEAD
 def main():
     data = data_preprocessing('cleanDataStageDeathBreastCancer.csv')
     supervised_learning_individual_feature(data)
+=======
+#def main():
+>>>>>>> 4946b65861980a894ab9c856c0b2b9dfaa43ee07
 
-main()
+#main()
