@@ -159,7 +159,7 @@ def get_demo_and_clin_data(case_uuid):
     url = "https://api.gdc.cancer.gov/cases/" + case_uuid
     params = (
         ('pretty', 'true'),
-        ('expand', 'diagnoses'),
+        ('expand', 'diagnoses,demographic'),
     )
     response = requests.get(url, params=params)
     try:
@@ -258,8 +258,8 @@ def create_clinical_df(case_ids, feature):
 
 
 def add_days_to_death(filename):
-    original_data = pd.DataFrame.from_csv(filename)
-    case_ids = original_data.case_uuid
+    original_data = pd.DataFrame.from_csv("rna_data/" + filename)
+    case_ids = list(original_data.case_uuid)
     data = {'case_uuid':[]}
     for i in range(len(case_ids)):
         data['case_uuid'].append(case_ids[i])
@@ -267,19 +267,23 @@ def add_days_to_death(filename):
         try:
             death = clinical['clinical_data']['days_to_death']
             try:
-                data['days_to_death'].append(stage)
+                data['days_to_death'].append(death)
             except:
-                data['days_to_death'] = [stage]
+                data['days_to_death'] = [death]
         except:
             try:
-                data['days_to_death'].append(0)
+                data['days_to_death'].append(None)
             except:
-                data['days_to_death'] = [0]
-
+                data['days_to_death'] = [None]
+    
+    file_name = "data_death/" + filename.split(".csv")[0] + "_add_death" + ".csv"
+    
     data = pd.DataFrame(data)
-    final = pd.merge(original_data, data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-    final.to_csv("cleanDataStageDeathBreastCancer"+".csv")
-    return final
+    if not data.empty:
+        final = pd.merge(original_data, data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+        final = final[final['days_to_death'].notnull()]
+        final.to_csv(file_name)
+        return final
 
 #add_days_to_death('cleanDataStage.csv')
 #
@@ -293,18 +297,42 @@ def normalize_df(df):
             df[col] = (df[col] - df[col].mean()) / df[col].std()
         count += 1
     return df
-    
-def main():
-    site = "Colon"
-    genetic_data = data_transform('data/' + site + '_case_rna_uuids.csv')
-#    genetic_data = normalize_df(genetic_data)
-#    genetic_data.fillna(genetic_data.mean(), inplace=True)
 
-    clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
+def make_full_rna_files():
+    for file in os.listdir("data"):
+        site = file.split("_")[0]
+        f = 'data/' + site + '_case_rna_uuids.csv'
+        if site == "Breast" or site == "Colon":
+            genetic_data = data_transform(f)
 
-    #merge genetic and clinical data here
-    final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-    final = final[final['tumor_stage'].notnull()]
-    final = final[final["tumor_stage"] != "tumor_stage"]
-    final.to_csv(site + "_full_rna_stage_data"+".csv")
-main()
+            clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
+
+            final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+            final = final[final['tumor_stage'].notnull()]
+#            final = final[final["tumor_stage"] != "tumor_stage"]
+            final.to_csv(site + "_full_rna_stage_data"+".csv")
+        print(site + " done")
+   
+#def main():
+#    site = "Colon"
+#    genetic_data = data_transform('data/' + site + '_case_rna_uuids.csv')
+##    genetic_data = normalize_df(genetic_data)
+##    genetic_data.fillna(genetic_data.mean(), inplace=True)
+#
+#    clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
+#
+#    #merge genetic and clinical data here
+#    final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+#    final = final[final['tumor_stage'].notnull()]
+#    final = final[final["tumor_stage"] != "tumor_stage"]
+#    final.to_csv(site + "_full_rna_stage_data"+".csv")
+#    
+#   
+#    make_full_rna_files()
+#res = 0
+#for file in os.listdir("rna_data"):
+#    print("doing: " + file)
+#    if "Adrenal" not in file and "Bladder" not in file:
+#        res = add_days_to_death(file)
+#    
+#main()
