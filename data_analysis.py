@@ -50,6 +50,7 @@ def supervised_learning_individual_feature(data, features, split, linear = True)
     diagnoses age as y value. then create a linear regression
     model and test it against the test data
     """
+
     features += ['case_uuid']
     X = data.drop(features, axis= 1)
     mins = []
@@ -60,19 +61,19 @@ def supervised_learning_individual_feature(data, features, split, linear = True)
             X_train, X_test, y_train, y_test = train_test_split(X_single, data.tumor_stage, test_size=0.25)
         else:
             X_train, X_test, y_train, y_test = train_test_split(X_single, data.days_to_death, test_size=0.25)
-       
+
         model = LinearRegression()
         if not linear:
             model = LogisticRegression()
-        
+
         model.fit(X_train, y_train)
         pred_test = model.predict(X_test)
         result = sqrt(sklearn.metrics.mean_squared_error(y_test,pred_test))
-        
+
         if i % 1000 == 0:
             print("Currently on gene: " + str(i))
         mins.append((result, X.columns[i]))
-    
+
     mins.sort(key = lambda x: x[0])
     print(mins[0:5])
     return mins
@@ -121,6 +122,10 @@ def get_top_10_death_for_all():
     temp.to_csv("top_10_logreg_death.csv")
     return res, log
 
-#def main():
+
+def main():
+    data = data_preprocessing('cleanDataStageDeathBreastCancer.csv')
+    supervised_learning_individual_feature(data)
+
 
 #main()
