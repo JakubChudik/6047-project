@@ -89,7 +89,7 @@ def get_all_cases_from_response(response, primary_site):
             if (
                 file.get("access", "") == "open" and
                 file.get("experimental_strategy", "") == "RNA-Seq" and
-                file.get("analysis", {}).get("workflow_type", "") == "HTSeq - FPKM"
+                file.get("analysis", {}).get("workflow_type", "") == "HTSeq - Counts"
                 ):
                     rna_seq_uuid = file["file_id"]
         if rna_seq_uuid:
@@ -99,10 +99,10 @@ def get_all_cases_from_response(response, primary_site):
 def get_all_cases_from_primary_site(primary_site = "Colon"):
     """
     Return a list of lists of primary_site, case_uuid and rna-seq_file_uuid for all cases
-    which fall within primary site primary_site. RNA-Seq file is type "HTSeq - FPKM-UQ" see
+    which fall within primary site primary_site. RNA-Seq file is type "HTSeq - Counts" see
     https://docs.gdc.cancer.gov/Encyclopedia/pages/HTSeq-FPKM-UQ/ for details
     """
-    res = [["primary_site","case_uuid", "rna_seq_uuid"]]
+    res = []
     offset = -1
     response = get_cases_response(primary_site, 0)
     while offset < response.json()["data"]["pagination"]["pages"]:
@@ -118,10 +118,11 @@ def make_files_for_cases(size):
     """
     case_counts = get_case_counts_for_primary_sites()
     for primary_site in case_counts:
+        print("one done")
         if case_counts[primary_site] >= size:
             temp_file = get_all_cases_from_primary_site(primary_site)
             if len(temp_file) >= size:
-                df = pd.DataFrame(temp_file)
+                df = pd.DataFrame(temp_file, columns = ["primary_site","case_uuid", "rna_seq_uuid"])
                 df.to_csv("data/" + primary_site + "_case_rna_uuids.csv", sep = ",")
     return
 
@@ -191,16 +192,10 @@ def data_transform(filename):
     corresponding rna_seq file and combines all the data into a single file
     that can be used to perform subsequent analysis
     """
-    gap = 1
-    random_cases = True
+    gap = 20
     dirpath = tempfile.mkdtemp()
     pd_list = []
-    file_df = None
-    if random_cases:
-        file_df = pd.read_csv(filename, header = 0)
-    else:
-        file_df = pd.read_csv(filename, header = 1)
-
+    file_df = pd.read_csv(filename, header = 0)
     for line in range(len(file_df)):
         if line % gap == 0:
             print(line,len(file_df))
@@ -225,11 +220,17 @@ def convertTumorStage(tumor_stage):
     """
     convert tumor stage string to number. For example iiic becomes 3
     """
-    if tumor_stage.count('v') > 0:
+    if tumor_stage == "not reported":
+        return None
+    elif tumor_stage == "0":
+        return 0
+    elif tumor_stage.count('i') > 0:
+        return tumor_stage.count('i')
+    elif tumor_stage.count('v') > 0:
         return 4
-    else:
-        stage = tumor_stage.count('i')
-        return stage
+    else:        
+        print("tumor stage: " + tumor_stage)
+        raise Exception
 
 def create_clinical_df(case_ids, feature):
     '''
@@ -281,13 +282,27 @@ def add_days_to_death(filename):
     final.to_csv("cleanDataStageDeathBreastCancer"+".csv")
     return final
 
-add_days_to_death('cleanDataStage.csv')
-
-# def main():
-#     genetic_data = data_transform('data/Breast_case_rna_uuids.csv')
-#     clinical_data = create_clinical_df(list(genetic_data.case_uuid))
+#add_days_to_death('cleanDataStage.csv')
 #
-#     #merge genetic and clinical data here
-#     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-#     final.to_csv("cleanDataStageSmall"+".csv")
-# main()
+    
+def normalize_df(df):
+    count = 1 
+    for col in df.columns:
+        if count % 1000 == 0:
+            print(count)
+        if col != "case_uuid":
+            df[col] = (df[col] - df[col].mean()) / df[col].std()
+        count += 1
+    return df
+    
+def main():
+    site = "Breast"
+    genetic_data = data_transform('data/' + site + '_case_rna_uuids.csv')
+    genetic_data = normalize_df(genetic_data)
+
+    clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
+
+    #merge genetic and clinical data here
+    final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
+    final.to_csv(site + "_test_data"+".csv")
+main()
