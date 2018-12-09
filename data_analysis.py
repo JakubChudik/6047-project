@@ -122,12 +122,10 @@ def get_top_10_death_for_all():
     temp.to_csv("top_10_logreg_death.csv")
     return res, log
 
-<<<<<<< HEAD
+
 def main():
     data = data_preprocessing('cleanDataStageDeathBreastCancer.csv')
     supervised_learning_individual_feature(data)
-=======
-#def main():
->>>>>>> 4946b65861980a894ab9c856c0b2b9dfaa43ee07
+
 
 #main()
