@@ -192,7 +192,7 @@ def data_transform(filename):
     corresponding rna_seq file and combines all the data into a single file
     that can be used to perform subsequent analysis
     """
-    gap = 20
+    gap = 1
     dirpath = tempfile.mkdtemp()
     pd_list = []
     file_df = pd.read_csv(filename, header = 0)
@@ -289,7 +289,7 @@ def normalize_df(df):
     count = 1 
     for col in df.columns:
         if count % 1000 == 0:
-            print(count)
+            print("normalized: " + str(count))
         if col != "case_uuid":
             df[col] = (df[col] - df[col].mean()) / df[col].std()
         count += 1
@@ -298,11 +298,12 @@ def normalize_df(df):
 def main():
     site = "Breast"
     genetic_data = data_transform('data/' + site + '_case_rna_uuids.csv')
-    genetic_data = normalize_df(genetic_data)
+#    genetic_data = normalize_df(genetic_data)
+#    genetic_data.fillna(genetic_data.mean(), inplace=True)
 
     clinical_data = create_clinical_df(list(genetic_data.case_uuid), "tumor_stage")
 
     #merge genetic and clinical data here
     final = pd.merge(genetic_data, clinical_data, left_on = 'case_uuid', right_on = 'case_uuid', how = 'outer')
-    final.to_csv(site + "_test_data"+".csv")
+    final.to_csv(site + "_full_rna_stage_data"+".csv")
 main()
