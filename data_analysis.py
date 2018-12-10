@@ -78,27 +78,27 @@ def supervised_learning_individual_feature(data, features, split, linear = True)
     print(mins[0:5])
     return mins
 
-def get_top_10_stage_for_all():
-    res =  dict()
-    log = dict()
-    features = ["tumor_stage"]
-    split = "tumor_stage"
-    for file in os.listdir("rna_data"):
-        site = file.split("_")[0]
-        f = 'rna_data/' + file
-        data = data_preprocessing(f)
-        mins = []
-        try:
-            mins = supervised_learning_individual_feature(data, features, split, linear = False)
-            res[site] = mins[0:10]
-            log[site] = "success"
-        except:
-            log[site] = "fail"
-            continue
-        print(site + " done")
-    temp = pd.DataFrame(res)
-    temp.to_csv("top_10_log_reg_stage.csv")
-    return res, log
+#def get_top_10_stage_for_all():
+#    res =  dict()
+#    log = dict()
+#    features = ["tumor_stage"]
+#    split = "tumor_stage"
+#    for file in os.listdir("rna_data"):
+#        site = file.split("_")[0]
+#        f = 'rna_data/' + file
+#        data = data_preprocessing(f)
+#        mins = []
+#        try:
+#            mins = supervised_learning_individual_feature(data, features, split, linear = False)
+#            res[site] = mins[0:10]
+#            log[site] = "success"
+#        except:
+#            log[site] = "fail"
+#            continue
+#        print(site + " done")
+#    temp = pd.DataFrame(res)
+#    temp.to_csv("top_10_log_reg_stage_old.csv")
+#    return res, log
 
 def get_top_10_stage_for_file(filename, site):
     res =  dict()
@@ -114,7 +114,7 @@ def get_top_10_stage_for_file(filename, site):
         print("failure")
 
     temp = pd.DataFrame(res)
-    temp.to_csv(site + "_top_10_log_reg_stage_old.csv")
+    temp.to_csv(site + "_top_10_log_reg_stage_new.csv")
     return res
 
 
